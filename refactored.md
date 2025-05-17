@@ -101,7 +101,7 @@ private ReportEntry2 createReportEntry(int counter, Entry entry) {
     BankTransactionCodeStructure4 codeStructure = new BankTransactionCodeStructure4()
             .withPrtry(new ProprietaryBankTransactionCodeStructure1()
                     .withCd(entry.bankTxnCodePrtry())
-                    .withIssr("Swedbank"));
+                    .withIssr("XYZ"));
 
     DateAndDateTimeChoice bookingDate = new DateAndDateTimeChoice()
             .withDt(convertStringToXMLGregorianCalendar(entry.bookingDate()));
