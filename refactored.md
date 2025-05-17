@@ -151,7 +151,7 @@ public class ReportGenerator {
         BankTransactionCodeStructure4 code = new BankTransactionCodeStructure4()
                 .withPrtry(new ProprietaryBankTransactionCodeStructure1()
                         .withCd(entry.bankTxnCodePrtry())
-                        .withIssr("Swedbank"));
+                        .withIssr("XYZ"));
 
         return new ReportEntry2()
                 .withNtryRef(generateEntryRefId.apply(counter))
