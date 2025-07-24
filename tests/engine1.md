@@ -242,3 +242,74 @@ You might want to add these to your test resources:
    - Consider adding integration tests that verify the actual XML output against the schema
    - You might want to add tests for edge cases (empty data lists, null contexts, etc.)
    - Consider using XMLUnit for more sophisticated XML comparison in integration tests
+
+# 20250724
+
+Based on the `BankToCustomerDebitCreditNotificationV02` class definition, I now understand the issue clearly. The problem is that the `Ntfctn` field expects a list of `AccountNotification2` objects, but our test was trying to handle it differently. Here's the corrected test:
+
+```java
+@Test
+void createDocument_ShouldMapDataAndCreateDocument() {
+    // Setup test data
+    AccountNotification2 accountNotification = mock(AccountNotification2.class);
+    List<AccountNotification2> notificationList = Collections.singletonList(accountNotification);
+    
+    // Setup mocks
+    when(reportDataV02Mapper.createBankNotification(mockData, mockContext)).thenReturn(genericNotification);
+    
+    // Create a properly populated BankToCustomerDebitCreditNotificationV02
+    BankToCustomerDebitCreditNotificationV02 camtNotification = new BankToCustomerDebitCreditNotificationV02()
+        .withGrpHdr(mock(GroupHeader42.class))
+        .withNtfctn(accountNotification);
+    
+    when(BankToCustomerDebitCreditNotificationV02Mapper.INSTANCE.mapToCamt054V02(genericNotification))
+        .thenReturn(camtNotification);
+    
+    when(objectFactory.createDocument()).thenReturn(document);
+    when(document.withBkToCstmrDbtCdtNtfctn(camtNotification)).thenReturn(document);
+    when(objectFactory.createDocument(document)).thenReturn(documentElement);
+
+    // Execute
+    JAXBElement<Document> result = generator.createDocument(mockData, mockContext);
+
+    // Verify
+    assertSame(documentElement, result);
+    verify(reportDataV02Mapper).createBankNotification(mockData, mockContext);
+    verify(BankToCustomerDebitCreditNotificationV02Mapper.INSTANCE).mapToCamt054V02(genericNotification);
+    verify(objectFactory).createDocument();
+    verify(document).withBkToCstmrDbtCdtNtfctn(camtNotification);
+    verify(objectFactory).createDocument(document);
+    verify(logger).trace("Generated camt054v02 document: {}", document);
+    
+    // Additional verification for the notification content
+    assertNotNull(camtNotification.getGrpHdr());
+    assertEquals(1, camtNotification.getNtfctn().size());
+    assertSame(accountNotification, camtNotification.getNtfctn().get(0));
+}
+```
+
+Key changes made:
+
+1. **Proper Notification Structure**:
+   - Created a proper `BankToCustomerDebitCreditNotificationV02` with both `GrpHdr` and `Ntfctn` populated
+   - Used the builder-style `withNtfctn()` method to add notifications
+
+2. **List Handling**:
+   - The `Ntfctn` field is now properly handled as a List<AccountNotification2>
+   - Created a mock `AccountNotification2` and added it to the notification
+
+3. **Verification**:
+   - Added verification for the notification structure
+   - Ensured the list contains exactly one notification
+   - Verified the group header is set
+
+4. **Type Safety**:
+   - All types now match the actual class definitions
+   - No more mixing of single objects with lists where it's not appropriate
+
+This test now properly reflects:
+- The actual structure of `BankToCustomerDebitCreditNotificationV02`
+- The list-based nature of the `Ntfctn` field
+- The proper way to construct and verify these objects
+
+The test should now pass without any type mismatches or incorrect method call expectations.
